@@ -41,47 +41,34 @@ th, td {
   color: red;
 }
 
-.flash-item.warning {
-  background: #fff7ed;
-  border: 1px solid #fdba74;
-  color: #7c2d12;
-}
+/* Warnungen */
+.flash-item.warning { background: #fff7ed; border: 1px solid #fdba74; color: #7c2d12; }
 
+/* Übersicht-Grid */
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 16), minmax(38px, 1fr));
   gap: 6px;
   margin-top: 12px;
 }
-
 .cell {
   position: relative;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   min-height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
-
 .cell .mark {
   font-weight: 700;
   font-size: 16px;
   line-height: 1;
 }
-
 .cell .ip {
   position: absolute;
-  bottom: 2px;
-  right: 6px;
-  font-size: 10px;
-  color: #374151;
+  bottom: 2px; right: 6px;
+  font-size: 10px; color: #374151;
+}
+.chip {
+  display:inline-block; padding:2px 8px; border-radius:999px; background:#e5e7eb; font-size:12px;
 }
 
-.chip {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #e5e7eb;
-  font-size: 12px;
-}

@@ -6,9 +6,12 @@
 <div class="grid" style="--cols: {{ cols }};">
   {% for c in cells %}
     <div class="cell" title="{{ c.ip }}{% if c.segment %} • {{ c.segment }}{% endif %}" style="background: {{ c.color }};">
-      <span class="mark">{{ c.mark }}</span>
+      <span class="mark">
+        {{ c.mark }}
+      </span>
       <span class="ip">{{ c.ip.split('.')[-1] }}</span>
     </div>
   {% endfor %}
 </div>
 {% endblock %}
+

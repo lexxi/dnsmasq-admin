@@ -7,15 +7,27 @@ from datetime import datetime
 from typing import Dict, Tuple
 
 
-def run_cmd(cmd: str, use_sudo: bool = False) -> Tuple[int, str, str]:
+def run_cmd(
+    cmd: str,
+    use_sudo: bool = False
+) -> Tuple[int, str, str]:
+    """
+    Führt einen Shell-Befehl ohne shell=True aus.
+
+    Rückgabe:
+        returncode, stdout, stderr
+    """
+
     if not cmd:
         return 0, "", ""
 
     args = shlex.split(cmd)
+
     if use_sudo:
         args = ["sudo"] + args
 
     try:
+
         proc = subprocess.run(
             args,
             stdout=subprocess.PIPE,
@@ -23,145 +35,446 @@ def run_cmd(cmd: str, use_sudo: bool = False) -> Tuple[int, str, str]:
             text=True,
             check=False
         )
-        return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
+
+        return (
+            proc.returncode,
+            proc.stdout.strip(),
+            proc.stderr.strip()
+        )
+
     except Exception as exc:
-        return 1, "", str(exc)
+
+        return (
+            1,
+            "",
+            str(exc)
+        )
 
 
-def backup_file(src: str, backup_dir: str) -> str:
+def backup_file(
+    src: str,
+    backup_dir: str
+) -> str:
+    """
+    Erstellt ein zeitgestempeltes Backup.
+    """
+
     if not src:
-        raise ValueError("No source path supplied.")
+        raise ValueError(
+            "Kein Quellpfad angegeben."
+        )
 
-    os.makedirs(backup_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    filename = os.path.basename(src)
-    dst = os.path.join(backup_dir, f"{filename}.{timestamp}.bak")
+    os.makedirs(
+        backup_dir,
+        exist_ok=True
+    )
+
+    timestamp = datetime.now().strftime(
+        "%Y%m%d-%H%M%S"
+    )
+
+    filename = os.path.basename(
+        src
+    )
+
+    dst = os.path.join(
+        backup_dir,
+        f"{filename}.{timestamp}.bak"
+    )
 
     if os.path.exists(src):
-        shutil.copy2(src, dst)
+
+        shutil.copy2(
+            src,
+            dst
+        )
 
     return dst
 
 
-def run_hooks(cfg: Dict) -> None:
-    use_sudo = bool(cfg.get("allow_sudo", False))
-    generate_script = cfg.get("generate_hosts_script")
-    reload_cmd = cfg.get("reload_cmd")
+def run_hooks(
+    cfg: Dict
+) -> None:
+    """
+    Führt nach einer Änderung aus:
+
+      1. convert_hosts.sh
+      2. dnsmasq reload
+
+    Bei Fehler wird eine Exception ausgelöst,
+    damit die GUI nicht so tut, als wäre alles OK.
+    """
+
+    use_sudo = bool(
+        cfg.get(
+            "allow_sudo",
+            False
+        )
+    )
+
+    generate_script = cfg.get(
+        "generate_hosts_script"
+    )
+
+    reload_cmd = cfg.get(
+        "reload_cmd"
+    )
 
     if generate_script:
-        rc, stdout, stderr = run_cmd(generate_script, use_sudo)
+
+        rc, stdout, stderr = run_cmd(
+            generate_script,
+            use_sudo
+        )
+
         if rc != 0:
+
             raise RuntimeError(
-                "Host generation failed: "
+                "Hosts-Generierung fehlgeschlagen: "
                 f"{stderr or stdout or rc}"
             )
 
     if reload_cmd:
-        rc, stdout, stderr = run_cmd(reload_cmd, use_sudo)
+
+        rc, stdout, stderr = run_cmd(
+            reload_cmd,
+            use_sudo
+        )
+
         if rc != 0:
+
             raise RuntimeError(
-                "dnsmasq reload failed: "
+                "dnsmasq reload fehlgeschlagen: "
                 f"{stderr or stdout or rc}"
             )
 
 
-def remove_lease_by_mac(leases_path: str, mac: str) -> Tuple[bool, int, str]:
-    mac = (mac or "").strip().lower()
+def remove_lease_by_mac(
+    leases_path: str,
+    mac: str
+) -> Tuple[bool, int, str]:
+    """
+    Entfernt alle Lease-Einträge für eine MAC.
+
+    WICHTIG:
+    Diese Funktion setzt voraus, dass dnsmasq
+    bereits gestoppt wurde.
+
+    Rückgabe:
+        success
+        Anzahl entfernter Zeilen
+        Fehlermeldung
+    """
+
+    mac = (
+        mac
+        or ""
+    ).strip().lower()
 
     if not mac:
-        return False, 0, "No MAC address supplied."
 
-    if not os.path.exists(leases_path):
-        return False, 0, f"Lease file not found: {leases_path}"
+        return (
+            False,
+            0,
+            "Keine MAC-Adresse angegeben."
+        )
+
+    if not os.path.exists(
+        leases_path
+    ):
+
+        return (
+            False,
+            0,
+            f"Lease-Datei nicht gefunden: "
+            f"{leases_path}"
+        )
 
     try:
-        with open(leases_path, "r", encoding="utf-8", errors="ignore") as f:
+
+        with open(
+            leases_path,
+            "r",
+            encoding="utf-8",
+            errors="ignore"
+        ) as f:
+
             lines = f.readlines()
 
         new_lines = []
         removed = 0
 
         for line in lines:
-            parts = line.strip().split()
-            if len(parts) >= 2 and parts[1].lower() == mac:
+
+            parts = (
+                line
+                .strip()
+                .split()
+            )
+
+            # dnsmasq lease format:
+            #
+            # expiry mac ip hostname clientid
+            #
+            if (
+                len(parts) >= 2
+                and parts[1].lower() == mac
+            ):
+
                 removed += 1
                 continue
-            new_lines.append(line)
+
+            new_lines.append(
+                line
+            )
 
         if removed == 0:
-            return True, 0, "No existing lease found."
 
-        tmp_path = leases_path + ".tmp"
+            return (
+                True,
+                0,
+                "Keine bestehende Lease gefunden."
+            )
 
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            f.writelines(new_lines)
+        tmp_path = (
+            leases_path
+            + ".tmp"
+        )
 
-        stat_info = os.stat(leases_path)
-        os.chmod(tmp_path, stat_info.st_mode)
+        with open(
+            tmp_path,
+            "w",
+            encoding="utf-8"
+        ) as f:
+
+            f.writelines(
+                new_lines
+            )
+
+        # Rechte/Eigentümer vom Original
+        # möglichst erhalten.
+        stat_info = os.stat(
+            leases_path
+        )
+
+        os.chmod(
+            tmp_path,
+            stat_info.st_mode
+        )
 
         try:
-            os.chown(tmp_path, stat_info.st_uid, stat_info.st_gid)
+
+            os.chown(
+                tmp_path,
+                stat_info.st_uid,
+                stat_info.st_gid
+            )
+
         except PermissionError:
             pass
 
-        os.replace(tmp_path, leases_path)
-        return True, removed, ""
+        os.replace(
+            tmp_path,
+            leases_path
+        )
+
+        return (
+            True,
+            removed,
+            ""
+        )
 
     except Exception as exc:
-        return False, 0, str(exc)
+
+        return (
+            False,
+            0,
+            str(exc)
+        )
 
 
-def force_lease_reassign(cfg: Dict, leases_path: str, mac: str) -> Tuple[bool, str]:
-    mac = (mac or "").strip().lower()
+def force_lease_reassign(
+    cfg: Dict,
+    leases_path: str,
+    mac: str
+) -> Tuple[bool, str]:
+    """
+    Erzwingt die Neuvergabe einer DHCP-Adresse:
+
+      1. Lease-Datei sichern
+      2. dnsmasq stoppen
+      3. Lease der angegebenen MAC löschen
+      4. dnsmasq wieder starten
+
+    Das entspricht dem manuellen Ablauf,
+    der bisher zuverlässig funktioniert hat.
+
+    Rückgabe:
+        success, message
+    """
+
+    mac = (
+        mac
+        or ""
+    ).strip().lower()
 
     if not mac:
-        return False, "No MAC address supplied."
+
+        return (
+            False,
+            "Keine MAC-Adresse angegeben."
+        )
 
     if not leases_path:
-        return False, "No lease file configured."
 
-    if not os.path.exists(leases_path):
-        return False, f"Lease file not found: {leases_path}"
+        return (
+            False,
+            "Keine Lease-Datei konfiguriert."
+        )
 
-    use_sudo = bool(cfg.get("allow_sudo", False))
-    stop_cmd = cfg.get("stop_cmd", "systemctl stop dnsmasq")
-    start_cmd = cfg.get("start_cmd", "systemctl start dnsmasq")
+    if not os.path.exists(
+        leases_path
+    ):
+
+        return (
+            False,
+            f"Lease-Datei nicht gefunden: "
+            f"{leases_path}"
+        )
+
+    use_sudo = bool(
+        cfg.get(
+            "allow_sudo",
+            False
+        )
+    )
+
+    stop_cmd = cfg.get(
+        "stop_cmd",
+        "systemctl stop dnsmasq"
+    )
+
+    start_cmd = cfg.get(
+        "start_cmd",
+        "systemctl start dnsmasq"
+    )
+
     stopped = False
 
+    #
+    # Backup
+    #
     try:
-        backup_dir = cfg.get("backup_dir", "/var/backups/dnsmasq-admin")
-        backup_file(leases_path, backup_dir)
+
+        backup_dir = cfg.get(
+            "backup_dir",
+            "/var/backups/dnsmasq-admin"
+        )
+
+        backup_file(
+            leases_path,
+            backup_dir
+        )
+
     except Exception as exc:
-        return False, f"Lease backup failed: {exc}"
+
+        return (
+            False,
+            "Backup der Lease-Datei "
+            f"fehlgeschlagen: {exc}"
+        )
 
     try:
-        rc, stdout, stderr = run_cmd(stop_cmd, use_sudo)
+
+        #
+        # dnsmasq stoppen
+        #
+        rc, stdout, stderr = run_cmd(
+            stop_cmd,
+            use_sudo
+        )
+
         if rc != 0:
-            return False, f"dnsmasq could not be stopped: {stderr or stdout or rc}"
+
+            return (
+                False,
+                "dnsmasq konnte nicht "
+                "gestoppt werden: "
+                f"{stderr or stdout or rc}"
+            )
 
         stopped = True
 
-        success, removed, error = remove_lease_by_mac(leases_path, mac)
-        if not success:
-            return False, f"Lease could not be removed: {error}"
+        #
+        # Lease löschen
+        #
+        success, removed, error = (
+            remove_lease_by_mac(
+                leases_path,
+                mac
+            )
+        )
 
-        rc, stdout, stderr = run_cmd(start_cmd, use_sudo)
+        if not success:
+
+            return (
+                False,
+                "Lease konnte nicht "
+                f"gelöscht werden: {error}"
+            )
+
+        #
+        # dnsmasq starten
+        #
+        rc, stdout, stderr = run_cmd(
+            start_cmd,
+            use_sudo
+        )
+
         if rc != 0:
-            return False, (
-                "Lease was modified, but dnsmasq could not be started: "
+
+            return (
+                False,
+                "Lease wurde bearbeitet, "
+                "aber dnsmasq konnte nicht "
+                "gestartet werden: "
                 f"{stderr or stdout or rc}"
             )
 
         stopped = False
 
         if removed:
-            return True, f"Removed {removed} old lease(s) for {mac}."
 
-        return True, f"No old lease existed for {mac}."
+            return (
+                True,
+                f"{removed} alte Lease(s) "
+                f"für {mac} entfernt."
+            )
+
+        return (
+            True,
+            f"Für {mac} war keine alte "
+            "Lease vorhanden."
+        )
 
     except Exception as exc:
-        return False, f"Lease reassignment failed: {exc}"
+
+        return (
+            False,
+            "Lease-Neuvergabe "
+            f"fehlgeschlagen: {exc}"
+        )
 
     finally:
+
+        #
+        # Sicherheitsnetz:
+        # dnsmasq niemals versehentlich
+        # gestoppt zurücklassen.
+        #
         if stopped:
-            run_cmd(start_cmd, use_sudo)
+
+            run_cmd(
+                start_cmd,
+                use_sudo
+            )

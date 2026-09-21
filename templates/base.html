@@ -13,11 +13,11 @@
       <a href="/">Übersicht</a>
       <a href="/add">+ Reservierung</a>
       <a href="/health" target="_blank">Health</a>
-      <a href="/config">Segmente</a>
-      <a href="/overview">Netz</a>
-      <form method="post" action="/reload" style="display:inline">
-        <button class="btn" type="submit">Reload</button>
-      </form>
+	<a href="/config">Segmente</a>
+	<a href="/overview">Übersicht</a>
+    <form method="post" action="/reload" style="display:inline">
+  <button class="btn" type="submit">Reload</button>
+</form>
     </nav>
   </header>
   <main>
@@ -31,15 +31,16 @@
       {% endif %}
     {% endwith %}
 
-    {% if cfg_warnings %}
-      <div class="flash">
-        {% for w in cfg_warnings %}
-          <div class="flash-item warning">{{ w }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
+{% if cfg_warnings %}
+  <div class="flash">
+    {% for w in cfg_warnings %}
+      <div class="flash-item warning">{{ w }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
 
     {% block content %}{% endblock %}
   </main>
 </body>
 </html>
+
