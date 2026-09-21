@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Segmente</h2>
+<div class="segments">
+  {% for s in seg_usage %}
+    <div class="seg-card">
+      <span class="seg-dot" style="background: {{ s.color }}"></span>
+      {{ s.name }}: {{ s.used }}/{{ s.size }} belegt
+    </div>
+  {% else %}
+    <em>Keine Segmente konfiguriert.</em>
+  {% endfor %}
+</div>
+
+<hr>
+
+<h2>DHCP-Reservierungen</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Hostname</th>
+      <th>IP</th>
+      <th>MAC</th>
+      <th>Segment</th>
+      <th>Aktion</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in reservations %}
+    <tr {% if r.segment %} style="background-color: {{ r.segment.color }}22" {% endif %}>
+      <td>{{ r.hostname }}</td>
+      <td>{{ r.ip }}</td>
+      <td><code>{{ r.mac }}</code></td>
+      <td>{{ r.segment.name if r.segment else '—' }}</td>
+      <td>
+        <form method="get" action="/move_existing" style="display:inline-flex; gap:6px; align-items:center;">
+          <input type="hidden" name="mac" value="{{ r.mac }}">
+          <select name="target">
+            {% for s in segments %}
+              {% if not r.segment or s.name != r.segment.name %}
+                <option value="{{ s.name }}">{{ s.name }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <button class="btn" type="submit">Verschieben</button>
+        </form>
+        <a href="/delete?mac={{ r.mac }}" class="btn danger" onclick="return confirm('Eintrag löschen?');">Löschen</a>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5"><em>Keine Reservierungen.</em></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<hr>
+
+<h2>Aktuelle Leases</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Hostname</th>
+      <th>IP</th>
+      <th>MAC</th>
+      <th>Segment</th>
+      <th>Aktion</th>
+      <th>Lease Lifetime</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for l in leases %}
+    <tr {% if l.segment %} style="background-color: {{ l.segment.color }}18" {% endif %}>
+      <td>{{ l.hostname or '—' }}</td>
+      <td>{{ l.ip }}</td>
+      <td><code>{{ l.mac }}</code></td>
+      <td>{{ l.segment.name if l.segment else '—' }}</td>
+      <td>
+        {% set ctx = res_by_mac.get(l.mac) %}
+        {% if ctx %}
+          {% set current_seg = ctx.segment %}
+          {% if l.segment and current_seg and l.segment.name == current_seg.name %}
+            <span class="chip">bereits in {{ current_seg.name }}</span>
+          {% elif l.segment %}
+            <a class="btn" href="/move?mac={{ l.mac }}&target={{ l.segment.name }}&hostname={{ l.hostname }}">Verschieben nach {{ l.segment.name }}</a>
+          {% else %}
+            <form method="get" action="/move" style="display:inline-flex; gap:6px; align-items:center;">
+              <input type="hidden" name="mac" value="{{ l.mac }}">
+              <input type="hidden" name="hostname" value="{{ l.hostname }}">
+              <select name="target">
+                {% for s in segments %}
+                  <option value="{{ s.name }}">{{ s.name }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn" type="submit">Verschieben</button>
+            </form>
+          {% endif %}
+        {% else %}
+          {% if l.segment %}
+            <a class="btn" href="/fix?mac={{ l.mac }}&hostname={{ l.hostname }}&segment={{ l.segment.name }}">Fixieren in {{ l.segment.name }}</a>
+          {% else %}
+            <form method="get" action="/fix" style="display:inline-flex; gap:6px; align-items:center;">
+              <input type="hidden" name="mac" value="{{ l.mac }}">
+              <input type="hidden" name="hostname" value="{{ l.hostname }}">
+              <select name="segment">
+                {% for s in segments %}
+                  <option value="{{ s.name }}">{{ s.name }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn" type="submit">Fixieren</button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </td>
+      <td>
+        {% if l.expiry == 0 %}
+          unbegrenzt
+        {% elif l.lifetime_min is not none and l.lifetime_min > 0 %}
+          {{ l.lifetime_h }} h
+        {% else %}
+          abgelaufen
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6"><em>Keine Leases gefunden.</em></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
