@@ -1,0 +1,15 @@
+[Unit]
+Description=Lightweight dnsmasq Admin GUI
+After=network.target dnsmasq.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/dnsmasq-admin
+Environment=DNSMASQ_ADMIN_SECRET=change-this-secret
+ExecStart=/opt/dnsmasq-admin/myenv/bin/python /opt/dnsmasq-admin/app.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
