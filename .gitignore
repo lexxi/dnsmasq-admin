@@ -1,0 +1,28 @@
+# Local configuration
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+myenv/
+.myenv/
+venv/
+.venv/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Runtime / temporary
+*.log
+*.tmp
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
