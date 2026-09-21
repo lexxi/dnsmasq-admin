@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Segmente bearbeiten</h2>
+
+<form method="post">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Farbe</th>
+        <th>Start-IP</th>
+        <th>Größe</th>
+        <th>Prefix</th>
+      </tr>
+    </thead>
+    <tbody id="segment-rows">
+      {% for s in segments %}
+      <tr>
+        <td><input name="name" value="{{ s.name }}"></td>
+        <td><input name="color" type="color" value="{{ s.color or '#ffffff' }}"></td>
+        <td><input name="start_ip" value="{{ s.start_ip }}"></td>
+        <td><input name="size" type="number" min="1" value="{{ s.size }}"></td>
+        <td><input name="hostname_prefix" value="{{ s.hostname_prefix }}"></td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td><input name="name"></td>
+        <td><input name="color" type="color" value="#ffffff"></td>
+        <td><input name="start_ip"></td>
+        <td><input name="size" type="number" min="1"></td>
+        <td><input name="hostname_prefix"></td>
+      </tr>
+    </tbody>
+  </table>
+  <button type="button" onclick="addRow()">+ Segment hinzufügen</button>
+  <button type="submit">Speichern</button>
+</form>
+
+<script>
+function addRow() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input name="name"></td>
+    <td><input name="color" type="color" value="#ffffff"></td>
+    <td><input name="start_ip"></td>
+    <td><input name="size" type="number" min="1"></td>
+    <td><input name="hostname_prefix"></td>`;
+  document.getElementById('segment-rows').appendChild(tr);
+}
+</script>
+{% endblock %}
