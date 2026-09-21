@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Neue Reservierung</h2>
+<form method="post" class="form">
+  <label>MAC-Adresse<input name="mac" required></label>
+  <label>IP-Adresse<input name="ip" placeholder="leer lassen für Segment-Auto-IP"></label>
+  <label>Hostname<input name="hostname"></label>
+  <label>Segment
+    <select name="segment">
+      <option value="">—</option>
+      {% for s in segments %}
+        <option value="{{ s.name }}">{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Speichern</button>
+</form>
+{% endblock %}
