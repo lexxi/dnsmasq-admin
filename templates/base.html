@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>dnsmasq-admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>dnsmasq-admin</h1>
+    <nav>
+      <a href="/">Übersicht</a>
+      <a href="/add">+ Reservierung</a>
+      <a href="/health" target="_blank">Health</a>
+      <a href="/config">Segmente</a>
+      <a href="/overview">Netz</a>
+      <form method="post" action="/reload" style="display:inline">
+        <button class="btn" type="submit">Reload</button>
+      </form>
+    </nav>
+  </header>
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash">
+          {% for category, message in messages %}
+            <div class="flash-item {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if cfg_warnings %}
+      <div class="flash">
+        {% for w in cfg_warnings %}
+          <div class="flash-item warning">{{ w }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
