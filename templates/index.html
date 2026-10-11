@@ -1,20 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-
-<h2>Segmente</h2>
-<div class="segments">
-  {% for s in seg_usage %}
-    <div class="seg-card">
-      <span class="seg-dot" style="background: {{ s.color }}"></span>
-      {{ s.name }}: {{ s.used }}/{{ s.size }} belegt
-    </div>
-  {% else %}
-    <em>Keine Segmente konfiguriert.</em>
-  {% endfor %}
-</div>
-
-<hr>
-
+{% set tab = request.args.get('tab', 'dashboard') %}
+{% if tab == 'reservations' %}
+<section class="tab-panel">
 <h2>DHCP-Reservierungen</h2>
 <table>
   <thead>
@@ -29,29 +17,24 @@
   <tbody>
   {% for r in reservations %}
     <tr {% if r.segment %} style="background-color: {{ r.segment.color }}22" {% endif %}>
-      <td>
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <span>{{ r.hostname or '—' }}</span>
-          <details class="hostname-editor">
-          <summary class="btn">Bearbeiten</summary>
-          <form method="post" action="{{ url_for('change_reservation_hostname') }}">
-            <input type="hidden" name="mac" value="{{ r.mac }}">
-            <label>Neuer Hostname
-              <input name="hostname" value="{{ r.hostname }}" maxlength="63"
-                     pattern="[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
-                     title="1–63 Zeichen: Buchstaben, Ziffern und Bindestrich"
-                     required>
-            </label>
-            <label><input type="checkbox" name="sync_lease" value="1" checked> Lease-Datei aktualisieren und dnsmasq neu starten (kurze DNS/DHCP-Unterbrechung)</label>
-            <button class="btn" type="submit">Speichern</button>
-          </form>
-          </details>
-        </div>
-      </td>
+      <td>{{ r.hostname or '—' }}</td>
       <td>{{ r.ip }}</td>
       <td><code>{{ r.mac }}</code></td>
       <td>{{ r.segment.name if r.segment else '—' }}</td>
       <td>
+        <div class="table-actions">
+          <details class="hostname-editor">
+            <summary class="btn">Bearbeiten</summary>
+            <form method="post" action="{{ url_for('change_reservation_hostname') }}">
+              <input type="hidden" name="mac" value="{{ r.mac }}">
+              <label>Neuer Hostname
+                <input name="hostname" value="{{ r.hostname }}" maxlength="63"
+                       pattern="[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?" required>
+              </label>
+              <label><input type="checkbox" name="sync_lease" value="1" checked> Lease aktualisieren und dnsmasq neu starten</label>
+              <button class="btn" type="submit">Speichern</button>
+            </form>
+          </details>
         {# Dropdown zum Verschieben in anderes Segment #}
         <form method="get" action="/move_existing" style="display:inline-flex; gap:6px; align-items:center;">
           <input type="hidden" name="mac" value="{{ r.mac }}">
@@ -65,6 +48,7 @@
           <button class="btn" type="submit">Verschieben</button>
         </form>
         <a href="/delete?mac={{ r.mac }}" class="btn danger" onclick="return confirm('Eintrag löschen?');">Löschen</a>
+        </div>
       </td>
     </tr>
   {% else %}
@@ -73,8 +57,10 @@
   </tbody>
 </table>
 
-<hr>
 
+</section>
+{% elif tab == 'leases' %}
+<section class="tab-panel">
 <h2>Aktuelle Leases</h2>
 <table>
   <thead>
@@ -150,5 +136,30 @@
   </tbody>
 </table>
 
-{% endblock %}
 
+</section>
+{% else %}
+<section class="tab-panel">
+<h2>Dashboard</h2>
+<h2>Segmente</h2>
+<div class="segments">
+  {% for s in seg_usage %}
+    <div class="seg-card">
+      <span class="seg-dot" style="background: {{ s.color }}"></span>
+      {{ s.name }}: {{ s.used }}/{{ s.size }} belegt
+    </div>
+  {% else %}
+    <em>Keine Segmente konfiguriert.</em>
+  {% endfor %}
+</div>
+
+
+<div class="dashboard-links">
+  <a href="/?tab=reservations">Statische Reservierungen: {{ reservations|length }}</a>
+  <a href="/?tab=leases">Aktuelle Leases: {{ leases|length }}</a>
+  <a href="/overview">Netzwerkübersicht öffnen</a>
+  <a href="/health" target="_blank" rel="noopener">dnsmasq-Health</a>
+</div>
+</section>
+{% endif %}
+{% endblock %}

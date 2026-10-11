@@ -5,19 +5,35 @@
   <title>dnsmasq-admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .main-nav { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+    .main-nav a { padding:9px 13px; border-radius:7px; text-decoration:none; color:#334155; background:#f1f5f9; }
+    .main-nav a.active { background:#dbeafe; color:#1d4ed8; font-weight:700; }
+    .table-actions { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
+    .table-actions details { display:inline-block; position:relative; }
+    .table-actions summary { cursor:pointer; list-style:none; white-space:nowrap; }
+    .table-actions details[open] form { position:absolute; right:0; top:calc(100% + 6px); z-index:5; background:white; border:1px solid #cbd5e1; border-radius:8px; padding:14px; width:min(340px,80vw); box-shadow:0 8px 24px #0002; }
+    .table-actions details[open] form label { display:block; margin-bottom:10px; }
+    .table-actions details[open] form input[name=hostname] { width:100%; box-sizing:border-box; }
+    .tab-panel { margin-top:18px; }
+    .dashboard-links { display:flex; gap:12px; flex-wrap:wrap; margin-top:18px; }
+    .dashboard-links a { padding:12px 16px; border:1px solid #cbd5e1; border-radius:8px; text-decoration:none; }
+    @media(max-width:720px) { .table-actions { justify-content:flex-start; } }
+  </style>
 </head>
 <body>
   <header>
     <h1>dnsmasq-admin</h1>
-    <nav>
-      <a href="/">Übersicht</a>
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <a href="/?tab=dashboard" class="{{ 'active' if request.path == '/' and request.args.get('tab', 'dashboard') == 'dashboard' else '' }}">Dashboard</a>
+      <a href="/?tab=reservations" class="{{ 'active' if request.path == '/' and request.args.get('tab') == 'reservations' else '' }}">Reservierungen</a>
+      <a href="/?tab=leases" class="{{ 'active' if request.path == '/' and request.args.get('tab') == 'leases' else '' }}">Aktuelle Leases</a>
+      <a href="/config" class="{{ 'active' if request.path == '/config' else '' }}">Einstellungen</a>
+      <a href="/overview">Netzwerkübersicht</a>
       <a href="/add">+ Reservierung</a>
-      <a href="/health" target="_blank">Health</a>
-	<a href="/config">Segmente</a>
-	<a href="/overview">Übersicht</a>
-    <form method="post" action="/reload" style="display:inline">
-  <button class="btn" type="submit">Reload</button>
-</form>
+      <a href="/docs" class="{{ 'active' if request.path == '/docs' else '' }}">Doku / How-to</a>
+      <a href="/health" target="_blank" rel="noopener">Health</a>
+      <form method="post" action="/reload" style="display:inline"><button class="btn" type="submit">Reload</button></form>
     </nav>
   </header>
   <main>
