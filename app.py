@@ -25,6 +25,7 @@ from helpers.system import (
     backup_file,
     run_hooks,
     force_lease_reassign,
+    sync_lease_hostname,
 )
 
 
@@ -411,9 +412,11 @@ def index():
     for lease in leases:
 
         lease_view.append({
-            "hostname": lease.get(
-                "hostname"
-            ),
+            "hostname": (res_by_mac[lease.get("mac")]["reservation"].hostname
+                         if lease.get("mac") in res_by_mac
+                         and res_by_mac[lease.get("mac")]["reservation"].ip == lease.get("ip")
+                         and res_by_mac[lease.get("mac")]["reservation"].hostname
+                         else lease.get("hostname")),
             "ip": lease.get(
                 "ip"
             ),
@@ -678,6 +681,9 @@ def change_reservation_hostname():
         flash(f"Hostname-Änderung konnte nicht vollständig abgeschlossen werden: {exc}", "danger")
         return redirect(url_for("index"))
 
+    if request.form.get("sync_lease") == "1":
+        ok, message = sync_lease_hostname(CFG, LEASES, mac, reservation.ip, hostname)
+        flash(message, "success" if ok else "warning")
     flash(f"Hostname '{old_hostname or '—'}' auf '{hostname}' geändert (IP {reservation.ip}).", "success")
     return redirect(url_for("index"))
 
