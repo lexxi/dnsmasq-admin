@@ -29,7 +29,22 @@
   <tbody>
   {% for r in reservations %}
     <tr {% if r.segment %} style="background-color: {{ r.segment.color }}22" {% endif %}>
-      <td>{{ r.hostname }}</td>
+      <td>
+        {{ r.hostname or '—' }}
+        <details class="hostname-editor">
+          <summary class="btn">Bearbeiten</summary>
+          <form method="post" action="{{ url_for('change_reservation_hostname') }}">
+            <input type="hidden" name="mac" value="{{ r.mac }}">
+            <label>Neuer Hostname
+              <input name="hostname" value="{{ r.hostname }}" maxlength="63"
+                     pattern="[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                     title="1–63 Zeichen: Buchstaben, Ziffern und Bindestrich"
+                     required>
+            </label>
+            <button class="btn" type="submit">Speichern</button>
+          </form>
+        </details>
+      </td>
       <td>{{ r.ip }}</td>
       <td><code>{{ r.mac }}</code></td>
       <td>{{ r.segment.name if r.segment else '—' }}</td>
