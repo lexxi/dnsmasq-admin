@@ -30,8 +30,9 @@
   {% for r in reservations %}
     <tr {% if r.segment %} style="background-color: {{ r.segment.color }}22" {% endif %}>
       <td>
-        {{ r.hostname or '—' }}
-        <details class="hostname-editor">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span>{{ r.hostname or '—' }}</span>
+          <details class="hostname-editor">
           <summary class="btn">Bearbeiten</summary>
           <form method="post" action="{{ url_for('change_reservation_hostname') }}">
             <input type="hidden" name="mac" value="{{ r.mac }}">
@@ -44,7 +45,8 @@
             <label><input type="checkbox" name="sync_lease" value="1" checked> Lease-Datei aktualisieren und dnsmasq neu starten (kurze DNS/DHCP-Unterbrechung)</label>
             <button class="btn" type="submit">Speichern</button>
           </form>
-        </details>
+          </details>
+        </div>
       </td>
       <td>{{ r.ip }}</td>
       <td><code>{{ r.mac }}</code></td>
