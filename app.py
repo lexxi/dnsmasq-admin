@@ -676,13 +676,30 @@ def change_reservation_hostname():
     try:
         backup_file(CONF, BACKUP_DIR)
         write_dnsmasq_conf(CONF, all_lines, reservations)
-        run_hooks(CFG)
+        sync_requested = request.form.get("sync_lease") == "1"
+        if sync_requested:
+            # Generate hosts without reload: the lease sync restarts dnsmasq.
+            from helpers.system import run_cmd
+            generate_script = CFG.get("generate_hosts_script")
+            if generate_script:
+                rc, out, err = run_cmd(generate_script, bool(CFG.get("allow_sudo", False)))
+                if rc != 0:
+                    raise RuntimeError(f"Hosts-Generierung fehlgeschlagen: {err or out or rc}")
+        else:
+            run_hooks(CFG)
     except Exception as exc:
         flash(f"Hostname-Änderung konnte nicht vollständig abgeschlossen werden: {exc}", "danger")
         return redirect(url_for("index"))
 
-    if request.form.get("sync_lease") == "1":
+    if sync_requested:
         ok, message = sync_lease_hostname(CFG, LEASES, mac, reservation.ip, hostname)
+        if not ok:
+            # Ensure config/hosts changes reach a still-running dnsmasq if
+            # synchronization failed before a successful service restart.
+            try:
+                run_hooks(CFG)
+            except Exception as exc:
+                message += f"; zusätzlicher Reload fehlgeschlagen: {exc}"
         flash(message, "success" if ok else "warning")
     flash(f"Hostname '{old_hostname or '—'}' auf '{hostname}' geändert (IP {reservation.ip}).", "success")
     return redirect(url_for("index"))
