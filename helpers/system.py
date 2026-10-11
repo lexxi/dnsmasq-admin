@@ -2,6 +2,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import tempfile
 
 from datetime import datetime
 from typing import Dict, Tuple
@@ -478,3 +479,62 @@ def force_lease_reassign(
                 start_cmd,
                 use_sudo
             )
+
+
+def sync_lease_hostname(cfg, leases_path, mac, ip, hostname):
+    """Update only hostname of matching MAC+IP, with dnsmasq stopped."""
+    if not os.path.isfile(leases_path):
+        return False, "Lease-Datei nicht gefunden."
+    use_sudo = bool(cfg.get("allow_sudo", False))
+    stop_cmd = cfg.get("stop_cmd", "systemctl stop dnsmasq")
+    start_cmd = cfg.get("start_cmd", "systemctl start dnsmasq")
+    stopped = False
+    tmp = None
+    backup = None
+    error = None
+    count = 0
+    try:
+        rc, out, err = run_cmd(stop_cmd, use_sudo)
+        if rc != 0:
+            return False, f"dnsmasq stop fehlgeschlagen: {err or out or rc}"
+        stopped = True
+        backup = backup_file(leases_path, cfg.get("backup_dir", "/var/backups/dnsmasq-admin"))
+        with open(leases_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        output = []
+        for line in lines:
+            parts = line.split()
+            if len(parts) >= 5 and parts[1].lower() == mac and parts[2] == ip:
+                parts[3] = hostname
+                line = " ".join(parts) + "\n"
+                count += 1
+            output.append(line)
+        if count:
+            st = os.stat(leases_path)
+            fd, tmp = tempfile.mkstemp(prefix=".dnsmasq-leases-", dir=os.path.dirname(leases_path))
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.writelines(output)
+                f.flush()
+                os.fsync(f.fileno())
+            os.chmod(tmp, st.st_mode & 0o7777)
+            os.chown(tmp, st.st_uid, st.st_gid)
+            os.replace(tmp, leases_path)
+            tmp = None
+    except Exception as exc:
+        error = str(exc)
+        if backup:
+            try:
+                shutil.copy2(backup, leases_path)
+            except Exception as restore_exc:
+                error += f"; Wiederherstellung fehlgeschlagen: {restore_exc}"
+    finally:
+        if tmp and os.path.exists(tmp):
+            os.unlink(tmp)
+        if stopped:
+            rc, out, err = run_cmd(start_cmd, use_sudo)
+            if rc != 0:
+                error = (error + "; " if error else "") + f"dnsmasq start fehlgeschlagen: {err or out or rc}"
+    if error:
+        return False, error
+    return True, (f"{count} Lease-Eintrag aktualisiert; dnsmasq neu gestartet." if count else
+                  "Keine passende Lease; dnsmasq neu gestartet.")
