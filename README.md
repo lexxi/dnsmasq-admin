@@ -2,10 +2,12 @@
 
 Lightweight Flask web interface for managing **dnsmasq DHCP reservations, leases, IP segments and local DNS**.
 
-> **Status:** early release / v0.1.0. Test in your environment before using it on a production DHCP server.
+> **Status:** development release. Test changes in your environment before using them on a production DHCP server.
 
 ## Features
 
+- Tabbed dashboard with integrated German-language documentation / how-to
+- Edit static reservation hostnames and optionally synchronize the matching lease (requires dnsmasq restart)
 - View current DHCP reservations and dynamic leases
 - Show remaining lease lifetime
 - Convert a dynamic lease into a fixed reservation
@@ -153,7 +155,7 @@ The client can then obtain its newly reserved address on the next DHCP request/r
 
 ## Security
 
-dnsmasq-admin is intended for a trusted administrative network. v0.1.0 does **not** provide built-in user authentication.
+dnsmasq-admin is intended for a trusted administrative network. The application does **not** provide built-in user authentication.
 
 Do not expose port 8088 directly to the Internet.
 
