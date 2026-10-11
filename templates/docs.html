@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<article style="max-width:980px;line-height:1.6">
+<h2>Dokumentation &amp; How-to</h2>
+<p>dnsmasq-admin verwaltet statische DHCP-Reservierungen, aktuelle Leases und IP-Segmente. Änderungen an Reservierungen können DNS/DHCP kurz unterbrechen.</p>
+<h3>Dashboard</h3>
+<p>Das Dashboard zeigt die Auslastung der konfigurierten Segmente und Links zu Reservierungen, Leases und Netzwerkübersicht.</p>
+<h3>Reservierungen</h3>
+<ol>
+<li>Über <strong>+ Reservierung</strong> eine MAC-Adresse, einen Hostnamen und eine IP bzw. ein Segment auswählen.</li>
+<li>Unter <strong>Reservierungen → Bearbeiten</strong> den Hostnamen ändern.</li>
+<li>Die Checkbox <strong>Lease aktualisieren und dnsmasq neu starten</strong> passt die bestehende Lease für dieselbe MAC und IP an. Dabei wird dnsmasq kurz gestoppt und neu gestartet.</li>
+<li>Mit <strong>Verschieben</strong> eine andere freie Adresse im Zielsegment zuweisen; mit <strong>Löschen</strong> die Reservierung entfernen.</li>
+</ol>
+<p><strong>Hinweis:</strong> Eine geänderte Reservierung zwingt einen Client nicht sofort zur DHCP-Erneuerung. Gegebenenfalls DHCP-Renew am Client durchführen.</p>
+<h3>Aktuelle Leases</h3>
+<p>Hier stehen Hostname, IP, MAC-Adresse, Segment und Restlaufzeit. Mit <strong>Fixieren</strong> lässt sich eine dynamische Lease in eine statische Reservierung übernehmen.</p>
+<h3>Einstellungen und Netzwerkübersicht</h3>
+<p>Unter <strong>Einstellungen</strong> werden Segmente mit Start-IP, Größe und Farbe bearbeitet. Die Netzwerkübersicht zeigt reservierte, belegte und freie Adressen im konfigurierten Netz.</p>
+<h3>Wichtige Dateien</h3>
+<table><tbody>
+<tr><th>Datei</th><th>Funktion</th></tr>
+<tr><td><code>/opt/dnsmasq-admin/config.json</code></td><td>App-Konfiguration; nicht im Git-Repository</td></tr>
+<tr><td><code>/etc/dnsmasq.d/dhcp-reservations.conf</code></td><td>Statische DHCP-Reservierungen</td></tr>
+<tr><td><code>/var/lib/misc/dnsmasq.leases</code></td><td>Aktuelle DHCP-Leases</td></tr>
+<tr><td><code>/var/backups/dnsmasq-admin</code></td><td>Standard-Backup-Verzeichnis</td></tr>
+</tbody></table>
+<h3>Wartung &amp; Fehlersuche</h3>
+<pre><code>systemctl status dnsmasq-admin --no-pager
+systemctl status dnsmasq --no-pager
+dnsmasq --test
+journalctl -u dnsmasq -n 50 --no-pager
+journalctl -u dnsmasq-admin -n 50 --no-pager</code></pre>
+<p>Der Button <strong>Reload</strong> lädt die App-Konfiguration neu; er ist kein Ersatz für einen dnsmasq-Neustart.</p>
+<h3>Sicherheit</h3>
+<p>Die Weboberfläche besitzt keine integrierte Anmeldung. Nur im vertrauenswürdigen Verwaltungsnetz oder hinter einem authentifizierten Reverse-Proxy bereitstellen. Vor Änderungen an produktiven DHCP-Diensten Backups prüfen.</p>
+<p>Weitere Details: <a href="https://github.com/lexxi/dnsmasq-admin#readme">README auf GitHub</a>.</p>
+</article>
+{% endblock %}
