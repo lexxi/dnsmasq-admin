@@ -4,6 +4,7 @@ import ipaddress
 import json
 import math
 import os
+import re
 
 from ipaddress import IPv4Address
 
@@ -634,6 +635,51 @@ def delete():
     return redirect(
         url_for("index")
     )
+
+
+
+# -------------------------------------------------------------------
+# Hostname einer statischen Reservierung ändern
+# -------------------------------------------------------------------
+
+@app.route("/reservation/hostname", methods=["POST"])
+def change_reservation_hostname():
+    mac = request.form.get("mac", "").strip().lower()
+    hostname = request.form.get("hostname", "").strip().lower()
+
+    # Single-label DNS hostnames: no spaces, underscores, dots or options.
+    if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", hostname):
+        flash("Ungültiger Hostname (1–63 Zeichen, a-z, 0-9 und Bindestrich).", "warning")
+        return redirect(url_for("index"))
+
+    all_lines, reservations = parse_dnsmasq_conf(CONF)
+    reservation = find_reservation(reservations, mac=mac) if mac else None
+
+    if not reservation or reservation.mac != mac:
+        flash("Statische Reservierung nicht gefunden.", "warning")
+        return redirect(url_for("index"))
+
+    if any(r.mac != mac and r.hostname.lower() == hostname for r in reservations):
+        flash(f"Hostname '{hostname}' ist bereits vergeben.", "warning")
+        return redirect(url_for("index"))
+
+    if reservation.hostname == hostname:
+        flash("Hostname ist bereits unverändert.", "info")
+        return redirect(url_for("index"))
+
+    old_hostname = reservation.hostname
+    reservation.hostname = hostname
+
+    try:
+        backup_file(CONF, BACKUP_DIR)
+        write_dnsmasq_conf(CONF, all_lines, reservations)
+        run_hooks(CFG)
+    except Exception as exc:
+        flash(f"Hostname-Änderung konnte nicht vollständig abgeschlossen werden: {exc}", "danger")
+        return redirect(url_for("index"))
+
+    flash(f"Hostname '{old_hostname or '—'}' auf '{hostname}' geändert (IP {reservation.ip}).", "success")
+    return redirect(url_for("index"))
 
 
 # -------------------------------------------------------------------
