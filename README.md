@@ -8,6 +8,7 @@ Lightweight Flask web interface for managing **dnsmasq DHCP reservations, leases
 
 - Tabbed dashboard with integrated German-language documentation / how-to
 - Edit static reservation hostnames and optionally synchronize the matching lease (requires dnsmasq restart)
+- Sort reservations by hostname, numeric IP address or segment; sort leases additionally by remaining lifetime (click table headers to toggle direction)
 - View current DHCP reservations and dynamic leases
 - Show remaining lease lifetime
 - Convert a dynamic lease into a fixed reservation
